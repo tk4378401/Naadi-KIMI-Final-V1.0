@@ -1,1 +1,160 @@
+# File: .github/workflows/build.yml
+# Ayurvedic Nadi Pariksha - CI/CD Factory
+# नाड़ी परीक्षण - CI/CD फैक्टरी
+# Automated builds for Windows EXEs and ESP32 Firmware
+# Windows EXE और ESP32 फर्मवेयर के लिए स्वचालित बिल्ड
 
+name: 🏭 Build Nadi Pariksha Ecosystem
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:  # Manual trigger / मैनुअल ट्रिगर
+
+jobs:
+  # ============================================================================
+  # JOB 1: Build Windows EXEs / Windows EXE बनाएं
+  # ============================================================================
+  build-windows-exe:
+    runs-on: windows-latest
+    name: 🪟 Build Windows Executables
+
+    steps:
+      # Node.js Deprecation Fix: Use actions/checkout@v5
+      # Node.js बहिष्करण फिक्स: actions/checkout@v5 का उपयोग करें
+      - name: 📥 Checkout Repository / भंडार चेकआउट करें
+        uses: actions/checkout@v5
+
+      # Node.js Deprecation Fix: Use actions/setup-python@v6
+      # Node.js बहिष्करण फिक्स: actions/setup-python@v6 का उपयोग करें
+      - name: 🐍 Setup Python / पायथन सेटअप करें
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Install Dependencies / निर्भरताएं स्थापित करें
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🔨 Build NadiMonitor.exe / NadiMonitor.exe बनाएं
+        run: |
+          pyinstaller --onefile --windowed --name NadiMonitor Nadi_Monitor.py
+        shell: pwsh
+
+      - name: 🔨 Build NadiGenerator.exe / NadiGenerator.exe बनाएं
+        run: |
+          pyinstaller --onefile --windowed --name NadiGenerator Nadi_Generator.py
+        shell: pwsh
+
+      - name: 📋 Verify Build Artifacts / बिल्ड आर्टिफैक्ट सत्यापित करें
+        run: |
+          Get-ChildItem -Path dist\ -Force
+          if (-not (Test-Path "dist\NadiMonitor.exe")) { 
+            Write-Error "NadiMonitor.exe not found!" 
+          }
+          if (-not (Test-Path "dist\NadiGenerator.exe")) { 
+            Write-Error "NadiGenerator.exe not found!" 
+          }
+        shell: pwsh
+
+      # Node.js Deprecation Fix: Use actions/upload-artifact@v5
+      # Node.js बहिष्करण फिक्स: actions/upload-artifact@v5 का उपयोग करें
+      - name: 📤 Upload Windows EXEs / Windows EXE अपलोड करें
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-executables
+          path: |
+            dist/NadiMonitor.exe
+            dist/NadiGenerator.exe
+          retention-days: 30
+          compression-level: 9
+
+  # ============================================================================
+  # JOB 2: Build ESP32 Firmware / ESP32 फर्मवेयर बनाएं
+  # ============================================================================
+  build-esp32-bin:
+    runs-on: ubuntu-latest
+    name: 🔥 Build ESP32 Firmware
+
+    steps:
+      # Node.js Deprecation Fix: Use actions/checkout@v5
+      # Node.js बहिष्करण फिक्स: actions/checkout@v5 का उपयोग करें
+      - name: 📥 Checkout Repository / भंडार चेकआउट करें
+        uses: actions/checkout@v5
+
+      - name: 🐍 Setup Python / पायथन सेटअप करें
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: 🔧 Install PlatformIO / PlatformIO स्थापित करें
+        run: |
+          pip install --upgrade pip
+          pip install platformio
+          pio --version
+
+      - name: 📁 Prepare Source Directory / स्रोत निर्देशिका तैयार करें
+        run: |
+          mkdir -p src
+          ls -la src/
+
+      - name: 🔨 Build Virtual Firmware (env:virtual) / वर्चुअल फर्मवेयर बनाएं
+        run: |
+          pio run -e virtual
+        working-directory: .
+
+      - name: 🔨 Build Hardware Firmware (env:hardware) / हार्डवेयर फर्मवेयर बनाएं
+        run: |
+          pio run -e hardware
+        working-directory: .
+
+      - name: 📋 Verify Firmware Binaries / फर्मवेयर बाइनरी सत्यापित करें
+        run: |
+          echo "=== Virtual Firmware ==="
+          ls -la .pio/build/virtual/ | grep -i firmware || ls -la .pio/build/virtual/
+          echo "=== Hardware Firmware ==="
+          ls -la .pio/build/hardware/ | grep -i firmware || ls -la .pio/build/hardware/
+
+      - name: 📦 Package Firmware Artifacts / फर्मवेयर आर्टिफैक्ट पैकेज करें
+        run: |
+          mkdir -p firmware_artifacts
+          # Find and copy virtual firmware
+          find .pio/build/virtual/ -name "*.bin" -exec cp {} firmware_artifacts/firmware_virtual.bin \;
+          # Find and copy hardware firmware  
+          find .pio/build/hardware/ -name "*.bin" -exec cp {} firmware_artifacts/firmware_hardware.bin \;
+          ls -la firmware_artifacts/
+
+      # Node.js Deprecation Fix: Use actions/upload-artifact@v5
+      # Node.js बहिष्करण फिक्स: actions/upload-artifact@v5 का उपयोग करें
+      - name: 📤 Upload ESP32 Firmware / ESP32 फर्मवेयर अपलोड करें
+        uses: actions/upload-artifact@v5
+        with:
+          name: esp32-firmware
+          path: firmware_artifacts/*.bin
+          retention-days: 30
+          compression-level: 9
+
+  # ============================================================================
+  # JOB 3: Summary / सारांश (Optional)
+  # ============================================================================
+  build-summary:
+    needs: [build-windows-exe, build-esp32-bin]
+    runs-on: ubuntu-latest
+    name: 📊 Build Summary
+
+    steps:
+      - name: ✅ Build Complete / बिल्ड पूर्ण
+        run: |
+          echo "=========================================="
+          echo "🏭 Build Summary / निर्माण सारांश"
+          echo "=========================================="
+          echo "✅ Windows EXEs: NadiMonitor.exe, NadiGenerator.exe"
+          echo "✅ ESP32 Firmware: firmware_virtual.bin, firmware_hardware.bin"
+          echo "=========================================="
+          echo "🙏 आयुर्वेदिक नाड़ी परीक्षण प्रणाली तैयार!"
+          echo "   Ayurvedic Nadi Pariksha System Ready!"
+          echo "=========================================="
