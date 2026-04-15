@@ -19,8 +19,16 @@ const uint16_t monitor_port = 5555;
 
 // Hardware Configuration
 // हार्डवेयर कॉन्फिगरेशन
-const int ADC_PIN = 34;  // GPIO34 (ADC1_CH6) - piezo sensor input
-const int ADC_ATTEN = ADC_ATTEN_DB_11;  // 0-3.3V range
+// NOTE: ADC_PIN is defined via build flag in platformio.ini (-D ADC_PIN=34)
+// NOTE: ADC_ATTEN is defined via build flag in platformio.ini
+#ifndef ADC_PIN
+  #define ADC_PIN 34  // GPIO34 (ADC1_CH6) - piezo sensor input
+#endif
+
+#ifndef ADC_ATTEN
+  // ESP32 Arduino core uses ADC_11db for 11dB attenuation (0-3.3V range)
+  #define ADC_ATTEN ADC_11db
+#endif
 
 // Sampling Configuration
 // सैंपलिंग कॉन्फिगरेशन
