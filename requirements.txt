@@ -1,0 +1,28 @@
+# File: requirements.txt
+# Ayurvedic Nadi Pariksha - Python Dependencies
+# नाड़ी परीक्षण - पायथन निर्भरताएं
+# Production-ready biomedical DSP application requirements
+
+# Core numerical and signal processing libraries
+# मूल संख्यात्मक और सिग्नल प्रोसेसिंग लाइब्रेरी
+numpy>=1.24.0
+scipy>=1.11.0
+
+# GUI Framework - PyQt6 for cross-platform medical interface
+# GUI फ्रेमवर्क - क्रॉस-प्लेटफॉर्म मेडिकल इंटरफेस के लिए PyQt6
+PyQt6>=6.5.0
+
+# Real-time plotting library for biomedical waveforms
+# बायोमेडिकल तरंगforms के लिए रियल-टाइम प्लॉटिंग लाइब्रेरी
+pyqtgraph>=0.13.0
+
+# Build tool for standalone Windows EXE distribution
+# स्टैंडअलोन Windows EXE वितरण के लिए बिल्ड टूल
+pyinstaller>=6.0.0
+
+# Development and testing dependencies (optional)
+# विकास और परीक्षण निर्भरताएं (वैकल्पिक)
+# pytest>=7.0.0
+# pytest-qt>=4.0.0
+# black>=23.0.0
+# flake8>=6.0.0
